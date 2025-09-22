@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import math
 
-class Inputembeddings(nn.Modules):
+class Inputembeddings(nn.Module):
 
     def __init__(self, d_model: int, vocab_size: int):
         super().__init__()
@@ -126,7 +126,7 @@ class ResidualConnection(nn.Module):
     def forward(self, x, sublayer):
         return x + self.dropout(sublayer(self.norm(x)))
     
-class EncoderBlock(nn.module):
+class EncoderBlock(nn.Module):
 
     def __init__(self, self_attention_block: MultiHeadAttentionBlock, feed_forward_block: FeedforwardBlock, dropout: float) ->None:
         super().__init__()
