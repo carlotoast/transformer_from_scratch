@@ -1,0 +1,9 @@
+# Byte_compiled file
+__pycache__/
+*pyc
+
+# Virtual enviornment folder
+env/
+
+#macOS system files
+.DS_Store
