@@ -7,6 +7,7 @@ class BilingualDataset(Dataset):
 
     def __init__(self, ds, tokenizer_src, tokenizer_tgt, src_lang, tgt_lang, seq_len) -> None:
         super().__init__()
+        self.seq_len = seq_len
 
         self.ds = ds
         self.tokenizer_src = tokenizer_src
@@ -41,7 +42,7 @@ class BilingualDataset(Dataset):
             [
                 self.sos_token,
                 torch.tensor(enc_input_tokens, dtype=torch.int64),
-                self.eoc_token,
+                self.eos_token,
                 torch.tensor([self.pad_token] * enc_num_padding_tokens, dtype=torch.int64)
             
             ]
@@ -57,24 +58,24 @@ class BilingualDataset(Dataset):
         )
 
         # Add EOS to the label (what we expect as output from the decoder)
-        label = torch.tensor(
+        label = torch.cat(
             [
                 torch.tensor(dec_input_tokens, dtype=torch.int64),
-                self.eoc_token,
+                self.eos_token,
                 torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64)
             ]
         )
 
         # For debugging checking if we reach this sequence length
         assert encoder_input.size(0) == self.seq_len
-        assert decoder_input(0) == self.seq_len
+        assert decoder_input.size(0) == self.seq_len
         assert label.size(0) == self.seq_len
 
         return {
             "encoder_input": encoder_input, # (seq_len)
             "decoder_input": decoder_input, # (seq_len)
             "encoder_mask": (encoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int(), # (1, 1, seq_len)
-            "decoder_mask": (decoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int() & casual_mask(decoder_input.size(0)), # (1, seq_len) & (1, seq_len, seq_len)
+            "decoder_mask": (decoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int() & causal_mask(decoder_input.size(0)), # (1, seq_len) & (1, seq_len, seq_len)
             "label": label, # src_text,
             "src_text": src_text,
             "tgt_text": tgt_text,

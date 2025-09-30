@@ -10,7 +10,7 @@ class Inputembeddings(nn.Module):
         self.vocab_size = vocab_size
         self.embedding = nn.Embedding(vocab_size, d_model)
 
-    def foreward(self, x):
+    def forward(self, x):
         return self.embedding(x) * math.sqrt(self.d_model)
     
 class PositionalEncoding(nn.Module):
@@ -47,12 +47,12 @@ class LayerNormalization(nn.Module):
         super().__init__()
         self.eps = eps
         self.alpha = nn.Parameter(torch.ones(features)) # Multiplied
-        self.bias=nn.Parameter(torch.zeros(features)) # Added
+        self.bias = nn.Parameter(torch.zeros(features)) # Added
 
-    def forward(self,x):
-        mean=x.mean(dim=-1,keepdim=True)
-        std=x.std(dim=-1,keepdim=True)
-        return self.alpha*(x-mean)/(std+self.eps)+self.bias
+    def forward(self, x):
+        mean = x.mean(dim=-1,keepdim=True)
+        std = x.std(dim=-1,keepdim=True)
+        return self.alpha * (x - mean) / (std + self.eps) + self.bias
     
 class FeedforwardBlock(nn.Module):
     
@@ -154,7 +154,7 @@ class Encoder(nn.Module):
     def forward(self, x, mask):
         for layer in self.layers:
             x = layer(x, mask)
-            return self.norm()
+            return self.norm(x)
         
 class DecoderBlock(nn.Module):
 
@@ -163,7 +163,7 @@ class DecoderBlock(nn.Module):
         self.self_attention_block = self_attention_block
         self.cross_attention_block = cross_attention_block
         self.feed_forward_block = feed_forward_block
-        self.residual_connections = nn.Module([ResidualConnection(features, dropout) for _ in range(3)])
+        self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(3)])
 
     def forward(self, x, encoder_output, src_mask, tgt_mask):
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, tgt_mask))
@@ -187,7 +187,7 @@ class ProjectionLayer(nn.Module):
 
     def __init__(self, d_model: int, vocab_size: int) -> None:
         super().__init__()
-        self.proj = nn.LInear(d_model, vocab_size)
+        self.proj = nn.Linear(d_model, vocab_size)
 
     def forward(self, x):
         # (Batch, Seq_Len, d_model) --> (Batch, Seq_len. Vocab_Size)
@@ -247,8 +247,8 @@ def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int
         deocder_blocks.append(decoder_block)
 
     # Creat the encoder and decoder
-    encoder = Encoder(nn.ModuleList(encoder_blocks))
-    decoder = Decoder(nn.ModuleList(deocder_blocks))
+    encoder = Encoder(d_model, nn.ModuleList(encoder_blocks))
+    decoder = Decoder(d_model, nn.ModuleList(deocder_blocks))
 
     #Creat the projection layer
     projection_layer = ProjectionLayer(d_model, tgt_vocab_size)
